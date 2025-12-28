@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: rbac
+spec: {}
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rbac-frontend
+  namespace: rbac
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rbac-frontend
+  template:
+    metadata:
+      labels:
+        app: rbac-frontend
+    spec:
+      imagePullSecrets:
+        - name: private-registry-auth
+      containers:
+        - name: rbac-frontend
+          image: 192.168.68.16:80/rbac-frontend/rbac-frontend:1
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rbac-frontend
+  namespace: rbac
+spec:
+  selector:
+    app: rbac-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

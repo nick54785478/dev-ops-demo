@@ -1,0 +1,147 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+              apiVersion: v1
+              kind: Pod
+              spec:
+                containers:
+                - name: jnlp
+                  image: jenkins/inbound-agent:latest
+                  args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+                - name: kubectl
+                  image: bitnami/kubectl:1.28.4
+                  command:
+                  - cat
+                  tty: true
+                  securityContext:
+                    runAsUser: 0
+                - name: node
+                  image: node:18-alpine
+                  command:
+                  - cat
+                  tty: true
+                - name: docker
+                  image: docker:latest
+                  command:
+                  - cat
+                  tty: true
+                  volumeMounts:
+                  - mountPath: /var/run/docker.sock
+                    name: sock
+                volumes:
+                - name: sock
+                  hostPath:
+                    path: /var/run/docker.sock
+                  
+            '''
+        }
+    }
+    environment {
+        DOCKER_API_VERSION = '1.43'
+    }
+    parameters {
+        gitParameter branch: '', branchFilter: '.*', defaultValue: 'dev', description: '請選擇構建的分支', name: 'Branch', quickFilterEnabled: false, selectedValue: 'NONE', sortMode: 'NONE', tagFilter: '*', type: 'GitParameterDefinition'
+    }
+    stages {
+        stage('拉取程式碼') {
+            steps {
+                echo "拉取程式碼 ..."
+                echo "Checking out branch: ${params.Branch}"
+                checkout scmGit(branches: [[name: '*/dev']], extensions: [], userRemoteConfigs: [[credentialsId: 'e176f7ff-52df-4ca6-81aa-08fa21c918f0', url: 'http://192.168.68.16:88/root/rbac-frontend.git']])            }
+        }
+        stage('程式碼編譯') {
+             steps {
+                 echo "程式碼編譯 ..."
+                  container('node') {
+                    sh '''
+                        npm install -g @angular/cli
+                        npm install @angular/cdk@18
+                        echo "Environment: $(cat src/environments/environment.ts)"
+                        echo "export const environment = { production: true, apiEndpoint: 'http://192.168.68.39:30999/api/v1' };" > src/environments/environment.server.ts
+                        ng build --configuration=production --aot --delete-output-path --verbose --output-path=dist/rbac-frontend
+                    '''
+                }
+            }
+        }
+         stage('程式碼掃描') {
+            steps {
+                echo "進行 SonarQube 掃描..."
+                container('node') {
+                    withSonarQubeEnv('sonarqube') {
+                        sh '''
+                            apk add --no-cache openjdk11
+                            npm install -g sonar-scanner
+                            sonar-scanner \
+                              -Dsonar.projectKey=rbac-frontend \
+                              -Dsonar.projectName=rbac-frontend \
+                              -Dsonar.projectVersion=${BUILD_NUMBER} \
+                              -Dsonar.sources=src \
+                              -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts
+                        '''
+                    }
+                }
+            }
+        }
+        stage('構建鏡像') {
+             steps {
+                echo "構建鏡像 ..."
+                container('docker') {
+                    withCredentials([usernamePassword(credentialsId: 'b6d19300-3157-4234-a9f9-5f1b7cfe63f0', passwordVariable: 'password', usernameVariable: 'username')]) {
+                        sh '''
+                            set -ex
+                            echo "列出 dist 目錄內容"
+                            ls -al dist
+                            
+                            echo "Dockerfile 內容如下："
+                            cat Dockerfile
+
+                            image=192.168.68.16:80/rbac-frontend/rbac-frontend:${BUILD_NUMBER}
+                            echo 'image: \${image}'
+                            docker build -t \${image} .
+                            docker login -u \${username} -p \${password} 192.168.68.16:80
+                            docker push \${image}
+                        '''
+                    }
+                }
+               
+            }
+        }
+        stage('進行部署') {
+            steps {
+                echo "進行部署 ..."
+                container('kubectl') {
+                    withCredentials([usernamePassword(credentialsId: 'b6d19300-3157-4234-a9f9-5f1b7cfe63f0', passwordVariable: 'password', usernameVariable: 'username'), file(credentialsId: 'd064b646-94ab-4027-a6d7-a81ed70dee35', variable: 'KUBECONFIG')]) {
+                            sh """
+                                echo "建立 Harbor 拉取映像的 Secret..."
+                                    kubectl delete secret private-registry-auth -n rbac --ignore-not-found=true
+                                    kubectl create secret docker-registry private-registry-auth \\
+                                        --docker-server=192.168.68.16:80 \\
+                                        --docker-username=\${username} \\
+                                        --docker-password=\${password} \\
+                                        --docker-email=nick54785478@gmail.com \\
+                                        -n rbac
+                            
+                                sed -i -r "s#(image: )(.*)#\\1192.168.68.16:80/rbac-frontend/rbac-frontend:${BUILD_NUMBER}#" rbac-frontend-deploy.yaml
+                                kubectl apply -f rbac-frontend-deploy.yaml
+                                sleep 3
+                                echo '${BUILD_NUMBER}'
+                                kubectl get pod,svc -n rbac
+                            """
+                        }
+                 }
+            }
+        }
+    }
+    post {
+        always {
+            echo "構建流程結束"
+        }
+        success {
+            echo "構建成功"
+        }
+        failure {
+            echo "構建失敗"
+        }
+    }
+}

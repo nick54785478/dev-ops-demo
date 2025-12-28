@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devops
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarqube-pv
+  namespace: devops
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 192.168.68.16
+    path: /data/nfs/sonarqube
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-pvc
+  namespace: devops
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarqube
+  namespace: devops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarqube
+  template:
+    metadata:
+      labels:
+        app: sonarqube
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+      - name: sonarqube
+        image: sonarqube:10.2-community
+        ports:
+        - containerPort: 9000
+        env:
+        - name: SONAR_ES_BOOTSTRAP_CHECKS_DISABLE
+          value: "true"
+        - name: SONARQUBE_JAVA_OPTS
+          value: "-Xms1G -Xmx2G"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: sonarqube-data
+          mountPath: /opt/sonarqube/data
+      volumes:
+      - name: sonarqube-data
+        persistentVolumeClaim:
+          claimName: sonarqube-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube
+  namespace: devops
+spec:
+  selector:
+    app: sonarqube
+  ports:
+    - port: 9000
+      targetPort: 9000
+  type: NodePort
+
