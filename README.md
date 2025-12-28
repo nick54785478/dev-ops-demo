@@ -6,9 +6,15 @@
 
 ## 一、Pipeline 概述
 
-本 CI/CD 文件同時涵蓋 **前端（rbac-frontend）** 與 **後端（rbac-service）** 兩條 Jenkins Pipeline，兩者共用 Kubernetes Jenkins Agent 架構，但在編譯、掃描與產出物上有所差異。
+<strong>
+註：在執行 Jenkins CI/CD Pipeline 之前，必須先完成基礎服務 MySQL 、 Jenkins 與 SonarQube 和 Kubernetes 集群相關建置 ( 使用三台虛擬機，並搭配 Docker 進行建置 )。
+</strong>
 
-此 Pipeline 採用 **Jenkins Declarative Pipeline**，並透過 **Kubernetes Plugin** 動態建立 Agent Pod 來執行各階段任務。
+---
+
+本 CI/CD 文件同時涵蓋 前端（rbac-frontend） 與 後端（rbac-service） 兩條 Jenkins Pipeline，兩者共用 Kubernetes Jenkins Agent 架構，但在編譯、掃描與產出物上有所差異。
+
+此 Pipeline 採用 Jenkins Declarative Pipeline，並透過 Kubernetes Plugin 動態建立 Agent Pod 來執行各階段任務。
 
 ### Pipeline 特色
 
@@ -295,3 +301,95 @@ Kubernetes 部署（Service / Ingress）
 ↓
 Pipeline 結束
 ```
+---
+
+## 七、基礎環境與先置作業（Infrastructure & Pre-requisites）
+
+本系統的 CI/CD 與執行環境由 Kubernetes 叢集 與 Infrastructure 虛擬機 組成，兩者職責明確區分。
+
+本 CI/CD 架構在 Jenkins Pipeline 執行前，需先於 Kubernetes 叢集中完成以下基礎服務建置，否則 Pipeline 將無法正常運作。
+
+### 7.1 Kubernetes 叢集說明
+
+說明：SonarQube 與 MySQL 皆以 Pod 形式部署於 Kubernetes 叢集中。
+
+**Kubernetes Node 規劃**
+
+| 角色	| IP	| 說明
+| ------ | ------ | ------------------ |
+| Master Node |	192.168.68.39 |	Kubernetes Control Plane / Master
+| Worker Node |	192.168.68.159 |	Kubernetes Worker（承載應用 Pod）
+
+### 7.2 Infrastructure 虛擬機
+
+Infrastructure VM 提供 CI/CD 與共用基礎服務，不直接承載業務 Pod。
+
+| IP | 主機角色 | 說明
+| ------ | ------ | ------------------ |
+| 192.168.68.16	| Infrastructure | Jenkins / Harbor / GitLab / NFS Server
+
+**Infrastructure 職責**
+
+ * Jenkins（CI/CD Pipeline）
+ * Harbor（Docker Image Registry）
+ * GitLab（原始碼管理）
+ * NFS Server（提供 MySQL 及 SonarQube PersistentVolume）
+
+### 7.3 MySQL 主從叢集（MySQL Master / Slave）
+
+本系統使用 MySQL 8.0 主從架構，並透過 StatefulSet + NFS PersistentVolume 方式部署。
+
+**架構說明**
+>* 架構類型：Master / Slave Replication
+>* Namespace：rbac
+>* 儲存體：NFS（ReadWriteMany）
+>* Workload：StatefulSet
+
+**元件組成**
+
+| 元件 | 說明 |
+| ------ | ------ |
+| PersistentVolume	| Master / Slave 各自一組 NFS PV |
+| PersistentVolumeClaim	| 綁定對應 PV |
+| ConfigMap |	MySQL 設定（server-id、binlog、relay-log）|
+| Secret |	MySQL Root 密碼 |
+| Service	| NodePort 對外服務 |
+| StatefulSet |	確保 MySQL Pod 穩定識別 |
+| Service | Port 對應 |
+| 角色 | Service	NodePort |
+| Master | mysql-master-svc	30306
+| Slave |	mysql-slave-svc	30308
+
+
+**關鍵設定說明**
+
+* Master
+>* server-id = 1
+>* 啟用 log-bin
+>* 指定 binlog_do_db
+
+* Slave
+>* server-id = 2
+>* 啟用 relay-log
+
+**注意：Slave 與 Master 的實際 replication（CHANGE MASTER TO）需於 MySQL 啟動後手動設定或另行自動化腳本完成。**
+
+---
+
+### 7.4 SonarQube 服務
+
+Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 SonarQube 服務部署。
+
+**SonarQube 角色**
+>* Frontend Pipeline：掃描 Angular / TypeScript
+>* Backend Pipeline：掃描 Java / Spring Boot
+
+**Jenkins 依賴項目**
+| 項目 | 說明 |
+| ------ | ------ |
+|SonarQube Server	| Jenkins 設定中的 sonarqube Server Name |
+|Sonar Token |	由 Jenkins Credential 管理 |
+
+網路存取	Jenkins Agent Pod 必須可存取 SonarQube Endpoint
+
+**注意：若 SonarQube 未就緒，Pipeline 將於「程式碼掃描」階段失敗。**
