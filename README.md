@@ -315,16 +315,16 @@ Pipeline 結束
 
 **Kubernetes Node 規劃**
 
-| 角色	| IP	| 說明
+| IP | 角色	| 說明
 | ------ | ------ | ------------------ |
-| Master Node |	192.168.68.39 |	Kubernetes Control Plane / Master
-| Worker Node |	192.168.68.159 |	Kubernetes Worker（承載應用 Pod）
+|	192.168.68.39 | Master Node  |	Kubernetes Control Plane / Master
+|	192.168.68.159 | Worker Node  |	Kubernetes Worker（承載應用 Pod）
 
 ### 7.2 Infrastructure 虛擬機
 
 Infrastructure VM 提供 CI/CD 與共用基礎服務，不直接承載業務 Pod。
 
-| IP | 主機角色 | 說明
+| IP | 角色 | 說明
 | ------ | ------ | ------------------ |
 | 192.168.68.16	| Infrastructure | Jenkins / Harbor / GitLab / NFS Server
 
