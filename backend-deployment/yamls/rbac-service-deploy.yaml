@@ -7,6 +7,29 @@ spec: {}
 status: {}
 
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rbac-config
+  namespace: rbac
+data:
+  SPRING_PROFILES_ACTIVE: k8s
+  SPRING_DATASOURCE_URL: jdbc:mysql://mysql-master-svc:3306/test_db
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
+  MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+  MANAGEMENT_ENDPOINTS_WEB_BASE_PATH: "/actuator"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rbac-secret
+  namespace: rbac
+type: Opaque
+stringData:
+  SPRING_DATASOURCE_USERNAME: root
+  SPRING_DATASOURCE_PASSWORD: "123456"
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,6 +50,13 @@ spec:
       containers:
         - name: rbac-service
           image: 192.168.68.16:80/rbac-service/rbac-service:1
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: rbac-config
+            - secretRef:
+                name: rbac-secret  
 
 ---
 apiVersion: v1
