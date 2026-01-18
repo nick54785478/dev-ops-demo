@@ -1,6 +1,24 @@
-# RBAC Jenkins Pipeline README
+# RBAC 雲原生 CI/CD 與全棧監控系統
 
-本文件說明 **rbac-frontend** 及 **rbac-backend** 專案的 Jenkins CI/CD Pipeline 設計與執行流程，涵蓋程式碼拉取、前端編譯、程式碼掃描、Docker 映像建置以及 Kubernetes 部署。
+本文件旨在詳述 **rbac-frontend** 與 **rbac-backend** 專案的 Jenkins 流水線（Pipeline）設計與執行流程。
+
+內容涵蓋自動化部署的全生命週期，包括：
+
+* 核心 Pipeline 流程。
+
+* 可觀測性架構：整合 Prometheus 與 Loki 進行數據採集，並透過 Grafana 實現指標監控與日誌聚合，建構全方位運維解決方案。
+
+---
+# 壹、 Jenkins 核心 Pipeline 流程
+
+### 流程: 
+
+* 自原始碼拉取（Checkout）
+* 前端構建、靜態代碼掃描
+* Docker 映像檔封裝
+* Kubernetes 叢集部署。
+
+
 
 ---
 
@@ -9,12 +27,15 @@
 <strong>
 註：在執行 Jenkins CI/CD Pipeline 之前，必須先完成基礎服務 MySQL 、 Jenkins 與 SonarQube 和 Kubernetes 集群相關建置 ( 使用三台虛擬機，並搭配 Docker 進行建置 )。
 </strong>
-
----
+<br><br/>
 
 本 CI/CD 文件同時涵蓋 前端（rbac-frontend） 與 後端（rbac-service） 兩條 Jenkins Pipeline，兩者共用 Kubernetes Jenkins Agent 架構，但在編譯、掃描與產出物上有所差異。
 
 此 Pipeline 採用 Jenkins Declarative Pipeline，並透過 Kubernetes Plugin 動態建立 Agent Pod 來執行各階段任務。
+
+
+
+---
 
 ### Pipeline 特色
 
@@ -393,3 +414,121 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
 網路存取	Jenkins Agent Pod 必須可存取 SonarQube Endpoint
 
 **注意：若 SonarQube 未就緒，Pipeline 將於「程式碼掃描」階段失敗。**
+
+---
+
+## 貳、監控與可觀測性架構 (Observability Architecture)
+
+本系統將監控視為生產級別的必要組件，透過以下配置實現自動化採集：
+
+* 指標監控 (Prometheus & Grafana)
+* 日誌聚合 (Loki)
+
+---
+
+## 一、Observability 概述
+
+本系統建構於 Kubernetes 環境，整合 Prometheus、Grafana 與 Loki (PLG Stack)，旨在提供全方位的可觀測性解決方案。
+
+透過自動化指標採集與日誌聚合，實現對微服務架構的即時監控、故障排查與數據持久化。
+
+---
+
+## 二、Prometheus & Grafana 架構
+
+系統採用 Prometheus Operator 模式，透過自定義資源（CRD）管理監控對象，並結合分散式儲存確保數據安全。
+
+* 指標層 (Metrics)：使用 Prometheus 採集系統、資料庫 (MySQL) 及 Java 應用指標。
+* 日誌層 (Logging)：透過 Loki 實現容器日誌的統一收納與檢索。
+* 展示層 (Visualization)：Grafana 整合多數據源，提供一站式監控面板。
+* 儲存層 (Storage)：全組件透過 NFS Server 進行數據持久化，防止 Pod 重啟導致數據丟失。
+
+---
+
+## 三、參數與環境變數
+
+**3.1 Prometheus 儲存參數 (values-prometheus-nfs.yaml)**
+
+
+| 參數名稱 | 設定值 | 說明 |
+| ------ | ------ | ------ |
+|retention | 15d	| 監控數據留存天數 |
+|retentionSize | 18GB	| 數據儲存上限 |
+|storage | 20Gi	| 申請之 NFS 持久化容量 |
+|storageClassName | nfs-static	| 指定之儲存類別 |
+
+
+**3.2 MySQL Exporter 配置 (mysql-exporter.yaml)**
+
+* DATA_SOURCE_NAME: exporter:exporter_password@tcp(mysql-master-svc.rbac.svc.cluster.local:3306)/
+* 採集端口: 9104
+
+**3.3 Java 應用監控環境變數**
+
+* MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
+* MANAGEMENT_ENDPOINTS_WEB_BASE_PATH: "/actuator"
+
+---
+
+## 四、執行流程
+
+**4.1 儲存準備**
+
+* 在 NFS Server (192.168.68.16) 建立實體目錄 /data/nfs/prometheus 與 /data/nfs/loki。
+* 建立 PersistentVolume (PV) 與標籤 pv: prometheus-nfs，確保精準綁定。
+
+**4.2 服務部署**
+
+* 透過 Helm 安裝 kube-prometheus-stack 並載入自定義 values。
+* 部署 mysqld-exporter 及其對應的 ConfigMap 與 Secret。
+
+**4.3 自動發現 (Service Discovery)**
+
+* 部署 ServiceMonitor 資源。
+* Prometheus Operator 根據 release: kube-prometheus 標籤識別 ServiceMonitor，自動更新採集清單。
+
+---
+
+## 五、結果處理
+
+**5.1 數據驗證**
+
+* Prometheus Targets：確認 rbac-service 與 mysql-exporter 狀態為 UP。
+* NFS 寫入確認：檢查 /data/nfs/prometheus/prometheus-db 內是否產生 wal 與數據塊。
+
+**5.2 Grafana 面板展示**
+
+* MySQL Overview：呈現 QPS、連接數及 Buffer Pool 命中率。
+* Loki Logs：在 Grafana 中透過 LogQL 檢索應用即時日誌。
+
+---
+
+## 六、整體示意
+
+系統監控流向如下：
+
+<pre>
+[應用服務/資料庫] ➔ [Exporters / Actuator] ➔ [K8s Service] 
+                                            ↓
+[Grafana 面板] ↞ [Prometheus/Loki 存儲] ↞ [ServiceMonitor 自動發現]
+      ↑                  ↓
+[NFS 數據持久化] ←───────┘
+</pre>
+
+---
+## 七、 基礎環境與先置作業（Infrastructure & Pre-requisites）
+
+**7.1 儲存節點 (NFS Server)**
+
+* IP: 192.168.68.16
+* 職責: 提供 Prometheus、Loki、MySQL 的數據落地。
+
+**7.2 監控資源權限**
+
+* Namespace: rbac
+* RBAC: 確保 Prometheus 有權限跨 Namespace 存取 rbac 內的 Service 端點。
+
+**7.3 標籤匹配規則 (Label Selection)**
+
+* ServiceMonitor Label: release: kube-prometheus
+* Service Selector: app: rbac-service 或 app: mysql-exporter
