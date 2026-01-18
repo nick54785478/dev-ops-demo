@@ -1,0 +1,22 @@
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    retentionSize: "18GB"
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: nfs-static
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 20Gi
+          selector:
+            matchLabels:
+              pv: prometheus-nfs
+
+grafana:
+  admin:
+    existingSecret: grafana-admin-secret
+    userKey: admin-user
+    passwordKey: admin-password

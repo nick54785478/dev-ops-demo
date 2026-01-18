@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-exporter-config
+  namespace: rbac
+data:
+  .my.cnf: |
+    [client]
+    user=exporter
+    password=exporter_password
+    host=mysql-master-svc
+    port=3306
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-exporter
+  namespace: rbac
+  labels:
+    app: mysql-exporter
+spec:
+  ports:
+    - name: metrics
+      port: 9104
+      targetPort: 9104
+  selector:
+    app: mysql-exporter
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-exporter-secret
+  namespace: rbac
+type: Opaque
+stringData:
+  DATA_SOURCE_NAME: "exporter:exporter_password@tcp(mysql-master-svc.rbac.svc.cluster.local:3306)/information_schema?parseTime=true&interpolateParams=true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-exporter
+  namespace: rbac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-exporter
+  template:
+    metadata:
+      labels:
+        app: mysql-exporter
+    spec:
+      containers:
+        - name: mysqld-exporter
+          image: prom/mysqld-exporter:v0.18.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config.my-cnf=/etc/mysql-exporter/.my.cnf"
+          ports:
+            - name: metrics
+              containerPort: 9104
+          volumeMounts:
+            - name: config
+              mountPath: /etc/mysql-exporter
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: mysql-exporter-config
+

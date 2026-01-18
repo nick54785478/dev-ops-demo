@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rbac-service-metrics
+  namespace: rbac
+  labels:
+    app: rbac-service
+spec:
+  selector:
+    app: rbac-service
+  ports:
+    - name: http
+      port: 8080        # Prometheus 會抓這個 port
+      targetPort: 8080  # Spring Boot Actuator port
+

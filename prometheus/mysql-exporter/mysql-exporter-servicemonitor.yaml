@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mysql-exporter
+  namespace: rbac
+  labels:
+    release: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: mysql-exporter
+  namespaceSelector:
+    matchNames:
+    - rbac
+  endpoints:
+    - port: metrics
+      interval: 15s
+
