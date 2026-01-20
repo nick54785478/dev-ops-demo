@@ -29,7 +29,7 @@
 * **容器引擎 :** 三台主機均需安裝 **Docker**。
 * **K8s 叢集 :** 以 **Docker** 為基礎環境，建立 Kubernetes 叢集。
 * **基礎服務 (於 Infra 節點) :**
-  * GitLab：原始碼管理中心(需將程式碼放置上該 GitLab 容器)。
+  * GitLab：原始碼管理中心(**需將程式碼放置上該 GitLab 容器**)。
   * Harbor：私有 Docker Image 倉庫。
   * Jenkins：自動化執行引擎 (CI/CD)。
   * NFS Server：提供 K8s 持久化儲存 (PV/PVC)。
