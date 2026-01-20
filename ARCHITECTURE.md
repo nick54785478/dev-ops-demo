@@ -90,7 +90,7 @@ Pipeline 啟動時，Jenkins 會動態建立一個 Pod，其結構如下：
 
 以下分為 **前端 Pipeline** 與 **後端 Pipeline** 兩個部分說明。
 
-## 4.1、前端 Pipeline（rbac-frontend）
+### 4.1、前端 Pipeline（rbac-frontend）
 
 ### Stage 1：拉取程式碼
 
