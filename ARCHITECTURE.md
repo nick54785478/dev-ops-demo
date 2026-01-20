@@ -1,4 +1,4 @@
-# RBAC 雲原生 CI/CD 與全棧監控系統
+# RBAC Service 雲原生 CI/CD 與監控系統架構書
 
 本文件旨在詳述 **rbac-frontend** 與 **rbac-backend** 專案的 Jenkins 流水線（Pipeline）設計與執行流程。
 
