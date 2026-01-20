@@ -1,4 +1,4 @@
-# RBAC 雲原生 CI/CD 與全棧監控系統架構書
+# RBAC 雲原生 CI/CD 與監控系統架構
 
   本文件詳述 **rbac-frontend** 與 **rbac-backend** 專案的自動化流程與監控體系。涵蓋了從環境初始化、**Jenkins Pipeline** 設計、**Kubernetes** 部署，到基於 **PLG Stack (Prometheus, Loki, Grafana)** 的可觀測性方案。
 
