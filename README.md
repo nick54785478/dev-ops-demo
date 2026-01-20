@@ -1,7 +1,11 @@
 # 我的 RBAC 雲原生 CI/CD 與監控系統架構
 
-  本文件詳述 **rbac-frontend** 與 **rbac-backend** 專案的自動化流程與監控體系。涵蓋了從環境初始化、**Jenkins Pipeline** 設計、**Kubernetes** 部署，到基於 **PLG Stack (Prometheus, Loki, Grafana)** 的可觀測性方案。
+  本文件詳述 **rbac-frontend** 與 **rbac-backend** 專案的自動化流程與監控體系。
+  
+  涵蓋了從環境初始化、**Jenkins Pipeline** 設計、**Kubernetes** 部署，到基於 **PLG Stack (Prometheus, Loki, Grafana)** 的可觀測性方案。
 
+* rbac-service 程式碼: https://github.com/nick54785478/rbac-service
+* rbac-frontend 程式碼: https://github.com/nick54785478/rbac-frontend
 
 ---
 
@@ -25,7 +29,7 @@
 * **容器引擎 :** 三台主機均需安裝 **Docker**。
 * **K8s 叢集 :** 以 **Docker** 為基礎環境，建立 Kubernetes 叢集。
 * **基礎服務 (於 Infra 節點) :**
-  * GitLab：原始碼管理中心。
+  * GitLab：原始碼管理中心(需將程式碼放置上該 GitLab 容器)。
   * Harbor：私有 Docker Image 倉庫。
   * Jenkins：自動化執行引擎 (CI/CD)。
   * NFS Server：提供 K8s 持久化儲存 (PV/PVC)。
