@@ -11,7 +11,7 @@
 
 
 ---
-# 壹、 Jenkins 核心 Pipeline 流程
+## 壹、 Jenkins 核心 Pipeline 流程
 
 ### 流程: 
 
@@ -24,7 +24,7 @@
 
 ---
 
-## 一、Pipeline 概述
+### 一、Pipeline 概述
 
 <strong>
 註：在執行 Jenkins CI/CD Pipeline 之前，必須先完成基礎服務 MySQL 、 Jenkins 與 SonarQube 和 Kubernetes 集群相關建置 ( 使用三台虛擬機，並搭配 Docker 進行建置 )。
@@ -49,7 +49,7 @@
 
 ---
 
-## 二、Kubernetes Agent 架構
+### 二、Kubernetes Agent 架構
 
 Pipeline 啟動時，Jenkins 會動態建立一個 Pod，其結構如下：
 
@@ -68,7 +68,7 @@ Pipeline 啟動時，Jenkins 會動態建立一個 Pod，其結構如下：
 
 ---
 
-## 三、Pipeline 參數與環境變數
+### 三、Pipeline 參數與環境變數
 
 ### 1. 參數（Parameters）
 
@@ -86,7 +86,7 @@ Pipeline 啟動時，Jenkins 會動態建立一個 Pod，其結構如下：
 
 ---
 
-## 四、Pipeline 執行流程
+### 四、Pipeline 執行流程
 
 以下分為 **前端 Pipeline** 與 **後端 Pipeline** 兩個部分說明。
 
@@ -185,7 +185,7 @@ Pipeline 啟動時，Jenkins 會動態建立一個 Pod，其結構如下：
 
 ---
 
-## 4.2、後端 Pipeline（rbac-service）
+### 4.2、後端 Pipeline（rbac-service）
 
 ### Stage 1：拉取程式碼
 
@@ -273,7 +273,7 @@ Sonar 主要參數：
 
 ---
 
-## 五、Pipeline 結果處理（Post Actions）
+### 五、Pipeline 結果處理（Post Actions）
 
 | 狀態      | 行為         |
 | ------- | ---------- |
@@ -283,7 +283,7 @@ Sonar 主要參數：
 
 ---
 
-## 六、整體流程示意
+### 六、整體流程示意
 
 以下分別說明 前端（rbac-frontend） 與 後端（rbac-service） 的完整 CI/CD 執行流程。
 
@@ -326,7 +326,7 @@ Pipeline 結束
 ```
 ---
 
-## 七、基礎環境與先置作業（Infrastructure & Pre-requisites）
+### 七、基礎環境與先置作業（Infrastructure & Pre-requisites）
 
 本系統的 CI/CD 與執行環境由 Kubernetes 叢集 與 Infrastructure 虛擬機 組成，兩者職責明確區分。
 
@@ -428,7 +428,7 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
 
 ---
 
-## 一、Observability 概述
+### 一、Observability 概述
 
 本系統建構於 Kubernetes 環境，整合 Prometheus、Grafana 與 Loki (PLG Stack)，旨在提供全方位的可觀測性解決方案。
 
@@ -436,7 +436,7 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
 
 ---
 
-## 二、Prometheus & Grafana 架構
+### 二、Prometheus & Grafana 架構
 
 系統採用 Prometheus Operator 模式，透過自定義資源（CRD）管理監控對象，並結合分散式儲存確保數據安全。
 
@@ -447,7 +447,7 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
 
 ---
 
-## 三、參數與環境變數
+### 三、參數與環境變數
 
 **3.1 Prometheus 儲存參數 (values-prometheus-nfs.yaml)**
 
@@ -472,7 +472,7 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
 
 ---
 
-## 四、執行流程
+### 四、執行流程
 
 **4.1 儲存準備**
 
@@ -491,7 +491,7 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
 
 ---
 
-## 五、結果處理
+### 五、結果處理
 
 **5.1 數據驗證**
 
@@ -505,7 +505,7 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
 
 ---
 
-## 六、整體示意
+### 六、整體示意
 
 系統監控流向如下：
 
@@ -518,7 +518,7 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
 </pre>
 
 ---
-## 七、 基礎環境與先置作業（Infrastructure & Pre-requisites）
+### 七、 基礎環境與先置作業（Infrastructure & Pre-requisites）
 
 **7.1 儲存節點 (NFS Server)**
 
