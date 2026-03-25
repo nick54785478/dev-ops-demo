@@ -6,6 +6,7 @@
 
 * rbac-service 程式碼: https://github.com/nick54785478/rbac-service
 * rbac-frontend 程式碼: https://github.com/nick54785478/rbac-frontend
+* 建置文件參考: https://drive.google.com/drive/folders/1xu92gWRZ8Nj_kLn7Qcu2ytDkieNiNnFM?usp=sharing
 
 ---
 
