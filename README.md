@@ -4,8 +4,8 @@
   
   涵蓋了從環境初始化、**Jenkins Pipeline** 設計、**Kubernetes** 部署，到基於 **PLG Stack (Prometheus, Loki, Grafana)** 的可觀測性方案。
 
-* rbac-service 程式碼: https://github.com/nick54785478/rbac-service
-* rbac-frontend 程式碼: https://github.com/nick54785478/rbac-frontend
+* rbac-service 程式碼: https://github.com/nick54785478/auth-service/tree/main/rbac-service
+* rbac-frontend 程式碼: https://github.com/nick54785478/auth-service/tree/main/rbac-frontend
 * 建置文件參考: https://drive.google.com/drive/folders/1xu92gWRZ8Nj_kLn7Qcu2ytDkieNiNnFM?usp=sharing
 
 ---
