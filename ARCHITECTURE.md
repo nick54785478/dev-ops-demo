@@ -514,7 +514,7 @@ Jenkins Pipeline 中的 程式碼掃描（SonarQube）階段，需事先完成 S
                                             ↓
 [Grafana 面板] ↞ [Prometheus/Loki 存儲] ↞ [ServiceMonitor 自動發現]
       ↑                  ↓
-[NFS 數據持久化] ←───────┘
+[NFS 數據持久化] ←────────┘
 </pre>
 
 ---
